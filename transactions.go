@@ -758,9 +758,9 @@ func (s *TransactionsService) Capture(ctx context.Context, transactionID string,
 
 // Void cancels a transaction that is pending settlement. Where the
 // processor supports it, the void is sent as an authorization reversal.
-func (s *TransactionsService) Void(ctx context.Context, transactionID string) error {
+func (s *TransactionsService) Void(ctx context.Context, transactionID string) (*APIResponse, error) {
 	if err := requireID("transaction id", transactionID); err != nil {
-		return err
+		return nil, err
 	}
 	return doEmpty(ctx, s.client, http.MethodPost, joinPath("transaction", transactionID, "void"), nil, nil)
 }

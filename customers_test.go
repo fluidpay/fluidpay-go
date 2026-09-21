@@ -132,9 +132,9 @@ func TestCustomers_Update(t *testing.T) {
 func TestCustomers_Delete(t *testing.T) {
 	g, c := newGateway(t)
 	g.respond("DELETE", "/api/vault/cust1", 200, `{"status":"success","msg":"success"}`)
-	mustNoError(t, c.Customers.Delete(ctx(), "cust1"))
+	mustNoError(t, errOf(c.Customers.Delete(ctx(), "cust1")))
 	assertRequest(t, g, "DELETE", "/api/vault/cust1")
-	mustError(t, c.Customers.Delete(ctx(), ""), "customer id is required")
+	mustError(t, errOf(c.Customers.Delete(ctx(), "")), "customer id is required")
 }
 
 func TestCustomers_Addresses(t *testing.T) {
@@ -154,14 +154,14 @@ func TestCustomers_Addresses(t *testing.T) {
 	mustNoError(t, err)
 	assertRequest(t, g, "POST", "/api/vault/customer/cust1/address/addr1")
 
-	mustNoError(t, c.Customers.DeleteAddress(ctx(), "cust1", "addr1"))
+	mustNoError(t, errOf(c.Customers.DeleteAddress(ctx(), "cust1", "addr1")))
 	assertRequest(t, g, "DELETE", "/api/vault/customer/cust1/address/addr1")
 
 	_, err = c.Customers.CreateAddress(ctx(), "cust1", nil)
 	mustError(t, err, "must not be nil")
 	_, err = c.Customers.UpdateAddress(ctx(), "cust1", "", &VaultAddress{})
 	mustError(t, err, "address id is required")
-	mustError(t, c.Customers.DeleteAddress(ctx(), "", "addr1"), "customer id is required")
+	mustError(t, errOf(c.Customers.DeleteAddress(ctx(), "", "addr1")), "customer id is required")
 }
 
 func TestCustomers_PaymentMethods(t *testing.T) {
@@ -220,9 +220,9 @@ func TestCustomers_PaymentMethods(t *testing.T) {
 	mustNoError(t, err)
 	assertRequest(t, g, "POST", "/api/vault/customer/cust1/token/pm1")
 
-	mustNoError(t, c.Customers.DeleteCard(ctx(), "cust1", "pm1"))
+	mustNoError(t, errOf(c.Customers.DeleteCard(ctx(), "cust1", "pm1")))
 	assertRequest(t, g, "DELETE", "/api/vault/customer/cust1/card/pm1")
-	mustNoError(t, c.Customers.DeleteACH(ctx(), "cust1", "pm1"))
+	mustNoError(t, errOf(c.Customers.DeleteACH(ctx(), "cust1", "pm1")))
 	assertRequest(t, g, "DELETE", "/api/vault/customer/cust1/ach/pm1")
 }
 
@@ -249,8 +249,8 @@ func TestCustomers_Validation(t *testing.T) {
 	mustError(t, err, "must not be nil")
 	_, err = c.Customers.UpdateToken(ctx(), "c", "p", nil)
 	mustError(t, err, "must not be nil")
-	mustError(t, c.Customers.DeleteCard(ctx(), "c", ""), "card id is required")
-	mustError(t, c.Customers.DeleteACH(ctx(), "c", ""), "ach id is required")
+	mustError(t, errOf(c.Customers.DeleteCard(ctx(), "c", "")), "card id is required")
+	mustError(t, errOf(c.Customers.DeleteACH(ctx(), "c", "")), "ach id is required")
 }
 
 func TestVerificationOptions_Query(t *testing.T) {

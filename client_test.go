@@ -234,7 +234,7 @@ func TestClient_MalformedSuccessBody(t *testing.T) {
 func TestClient_EmptySuccessBody(t *testing.T) {
 	g, c := newGateway(t)
 	g.respond("POST", "/api/transaction/abc/void", 200, "")
-	mustNoError(t, c.Transactions.Void(ctx(), "abc"))
+	mustNoError(t, errOf(c.Transactions.Void(ctx(), "abc")))
 }
 
 func TestClient_ContextCancellation(t *testing.T) {

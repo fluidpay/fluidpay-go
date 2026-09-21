@@ -71,9 +71,9 @@ func (s *APIKeysService) List(ctx context.Context) (*APIKeyList, error) {
 
 // Delete revokes an API key. Requests made with a revoked key fail with an
 // unauthorized error.
-func (s *APIKeysService) Delete(ctx context.Context, apiKeyID string) error {
+func (s *APIKeysService) Delete(ctx context.Context, apiKeyID string) (*APIResponse, error) {
 	if err := requireID("api key id", apiKeyID); err != nil {
-		return err
+		return nil, err
 	}
 	return doEmpty(ctx, s.client, http.MethodDelete, joinPath("user", "apikey", apiKeyID), nil, nil)
 }

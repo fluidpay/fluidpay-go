@@ -51,9 +51,9 @@ func (s *TerminalsService) List(ctx context.Context) (*TerminalList, error) {
 }
 
 // Settle closes the open batch on a terminal.
-func (s *TerminalsService) Settle(ctx context.Context, terminalID string) error {
+func (s *TerminalsService) Settle(ctx context.Context, terminalID string) (*APIResponse, error) {
 	if err := requireID("terminal id", terminalID); err != nil {
-		return err
+		return nil, err
 	}
 	return doEmpty(ctx, s.client, http.MethodPost, joinPath("terminal", terminalID, "settle"), nil, nil)
 }

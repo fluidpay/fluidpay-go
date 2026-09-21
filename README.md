@@ -150,13 +150,17 @@ You can also manage keys programmatically; see
 A `*Client` is safe for concurrent use. Build one and share it.
 
 Every result embeds `fluidpay.APIResource`, so the HTTP response that
-produced it is one field away:
+produced it is one call away:
 
 ```go
-tx.LastResponse.CorrelationID // quote this in support requests
+tx.CorrelationID()            // quote this in support requests
 tx.LastResponse.StatusCode
 tx.LastResponse.Header
 ```
+
+Methods with nothing else to return (`Void`, `Delete`, `Settle`, ...) hand
+back the `*fluidpay.APIResponse` directly. See
+[Correlation IDs](#correlation-ids) for every way to reach the ID.
 
 ## Transactions
 
@@ -333,7 +337,7 @@ and `SubscriptionID` set.
 
 ```go
 terminals, err := client.Terminals.List(ctx)             // GET /terminals
-err = client.Terminals.Settle(ctx, terminalID)           // POST /terminal/{id}/settle
+_, err = client.Terminals.Settle(ctx, terminalID)        // POST /terminal/{id}/settle
 
 batches, err := client.Settlements.SearchBatches(ctx, &fluidpay.SettlementBatchSearchRequest{
 	BatchDate: fluidpay.Day(time.Now().AddDate(0, 0, -1)),
@@ -361,7 +365,7 @@ key, err := client.APIKeys.Create(ctx, &fluidpay.APIKeyCreateRequest{
 })
 key.Key                                       // shown once; store it now
 keys, err := client.APIKeys.List(ctx)
-err = client.APIKeys.Delete(ctx, key.ID)      // revoke
+_, err = client.APIKeys.Delete(ctx, key.ID)   // revoke; the response carries the correlation id
 ```
 
 `client.Users` also offers `Get`, `List`, `Create`, `Update`, `Delete` and
@@ -392,9 +396,43 @@ if err != nil {
 `Error.Error()` reads like
 `fluidpay: POST /transaction: 400 Bad Request: bad request error: invalid Postal Code (correlation id ...)`.
 
-The `x-correlation-id` header identifies the request in FluidPay's logs.
-It is on every `*Error` and on every successful result under
-`LastResponse.CorrelationID`. Include it in support tickets.
+### Correlation IDs
+
+FluidPay attaches an `x-correlation-id` header to every response. It is
+the key their support team uses to find a request in their logs, so the
+SDK keeps it reachable no matter how a call ends:
+
+| Situation | Where to find it |
+| --- | --- |
+| A call that returns a value (`Sale`, `Get`, `List`, ...) | `tx.CorrelationID()` or `tx.LastResponse.CorrelationID`; list results and each item carry it too |
+| A call with no other result (`Void`, `Delete`, `Settle`, `Logout`, ...) | The `*fluidpay.APIResponse` it returns: `resp.CorrelationID` |
+| The gateway rejected the request | `apiErr.CorrelationID`, `apiErr.Response()`, or `fluidpay.CorrelationID(err)` |
+| The response could not be decoded | `fluidpay.CorrelationID(err)`; the message includes it as well |
+| Every request, for your logs | `fluidpay.WithResponseHook` |
+
+```go
+// On results.
+tx, err := client.Transactions.Sale(ctx, req)
+log.Printf("sale %s correlation id %s", tx.ID, tx.CorrelationID())
+
+// On calls with no other result.
+resp, err := client.Transactions.Void(ctx, tx.ID)
+log.Printf("void correlation id %s", resp.CorrelationID)
+
+// On any error, wrapped or not.
+if err != nil {
+	log.Printf("failed: %v (correlation id %q)", err, fluidpay.CorrelationID(err))
+}
+
+// Once, for everything.
+client, _ := fluidpay.NewClientFromEnv(fluidpay.WithResponseHook(func(r *fluidpay.APIResponse) {
+	log.Printf("fluidpay %s /%s -> %d correlation id %s", r.Method, r.Path, r.StatusCode, r.CorrelationID)
+}))
+```
+
+`APIResponse` also exposes the HTTP `StatusCode`, the full `Header`, and the
+envelope `Status` and `Msg`. Transport failures never reach the gateway, so
+they carry no correlation ID and `fluidpay.CorrelationID(err)` returns `""`.
 
 ## Webhooks
 
@@ -528,6 +566,8 @@ Behavioural changes worth knowing:
 - The context you pass is honoured; the old code ignored it.
 - Response `Data` envelopes are unwrapped for you. Lists return a `*XList`
   with `Data` and `TotalCount`.
+- Calls that have no other result (`Void`, `Delete`, ...) return
+  `(*APIResponse, error)` so the correlation ID is never lost.
 
 ## Contributing
 

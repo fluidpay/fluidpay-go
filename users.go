@@ -146,17 +146,17 @@ func (s *UsersService) Update(ctx context.Context, userID string, req *UserUpdat
 }
 
 // Delete removes a user.
-func (s *UsersService) Delete(ctx context.Context, userID string) error {
+func (s *UsersService) Delete(ctx context.Context, userID string) (*APIResponse, error) {
 	if err := requireID("user id", userID); err != nil {
-		return err
+		return nil, err
 	}
 	return doEmpty(ctx, s.client, http.MethodDelete, joinPath("user", userID), nil, nil)
 }
 
 // ChangePassword changes the authenticated user's password.
-func (s *UsersService) ChangePassword(ctx context.Context, req *ChangePasswordRequest) error {
+func (s *UsersService) ChangePassword(ctx context.Context, req *ChangePasswordRequest) (*APIResponse, error) {
 	if req == nil {
-		return errNilRequest("change password")
+		return nil, errNilRequest("change password")
 	}
 	return doEmpty(ctx, s.client, http.MethodPost, "user/change-password", nil, req)
 }

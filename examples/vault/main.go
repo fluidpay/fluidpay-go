@@ -37,7 +37,7 @@ func main() {
 		log.Fatalf("create customer: %v", err)
 	}
 	defer func() {
-		if err := client.Customers.Delete(context.Background(), customer.ID); err != nil {
+		if _, err := client.Customers.Delete(context.Background(), customer.ID); err != nil {
 			log.Printf("delete customer: %v", err)
 		}
 	}()
@@ -69,5 +69,5 @@ func main() {
 		log.Fatalf("sale: %v", err)
 	}
 	fmt.Printf("charged %d cents: %s (%s)\n", tx.Amount, tx.Response, tx.ID)
-	_ = client.Transactions.Void(ctx, tx.ID)
+	_, _ = client.Transactions.Void(ctx, tx.ID)
 }

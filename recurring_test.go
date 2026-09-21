@@ -37,7 +37,7 @@ func TestAddOns(t *testing.T) {
 	assertRequest(t, g, "POST", "/api/recurring/addon/a1")
 	equal(t, "update body", string(g.last().Body), `{"name":"n","percentage":43440,"duration":3}`)
 
-	mustNoError(t, c.AddOns.Delete(ctx(), "a1"))
+	mustNoError(t, errOf(c.AddOns.Delete(ctx(), "a1")))
 	assertRequest(t, g, "DELETE", "/api/recurring/addon/a1")
 
 	_, err = c.AddOns.Create(ctx(), nil)
@@ -48,7 +48,7 @@ func TestAddOns(t *testing.T) {
 	mustError(t, err, "must not be nil")
 	_, err = c.AddOns.Update(ctx(), "", &AdjustmentRequest{})
 	mustError(t, err, "add-on id is required")
-	mustError(t, c.AddOns.Delete(ctx(), ""), "add-on id is required")
+	mustError(t, errOf(c.AddOns.Delete(ctx(), "")), "add-on id is required")
 }
 
 func TestDiscounts(t *testing.T) {
@@ -80,7 +80,7 @@ func TestDiscounts(t *testing.T) {
 	mustNoError(t, err)
 	assertRequest(t, g, "POST", "/api/recurring/discount/d1")
 
-	mustNoError(t, c.Discounts.Delete(ctx(), "d1"))
+	mustNoError(t, errOf(c.Discounts.Delete(ctx(), "d1")))
 	assertRequest(t, g, "DELETE", "/api/recurring/discount/d1")
 
 	_, err = c.Discounts.Create(ctx(), nil)
@@ -89,7 +89,7 @@ func TestDiscounts(t *testing.T) {
 	mustError(t, err, "discount id is required")
 	_, err = c.Discounts.Update(ctx(), "d1", nil)
 	mustError(t, err, "must not be nil")
-	mustError(t, c.Discounts.Delete(ctx(), ""), "discount id is required")
+	mustError(t, errOf(c.Discounts.Delete(ctx(), "")), "discount id is required")
 }
 
 func TestPlans(t *testing.T) {
@@ -132,7 +132,7 @@ func TestPlans(t *testing.T) {
 	assertRequest(t, g, "POST", "/api/recurring/plan/p1")
 	equal(t, "charge_on_day", g.bodyJSON()["charge_on_day"], true)
 
-	mustNoError(t, c.Plans.Delete(ctx(), "p1"))
+	mustNoError(t, errOf(c.Plans.Delete(ctx(), "p1")))
 	assertRequest(t, g, "DELETE", "/api/recurring/plan/p1")
 
 	_, err = c.Plans.Create(ctx(), nil)
@@ -141,7 +141,7 @@ func TestPlans(t *testing.T) {
 	mustError(t, err, "plan id is required")
 	_, err = c.Plans.Update(ctx(), "p1", nil)
 	mustError(t, err, "must not be nil")
-	mustError(t, c.Plans.Delete(ctx(), ""), "plan id is required")
+	mustError(t, errOf(c.Plans.Delete(ctx(), "")), "plan id is required")
 }
 
 func TestSubscriptions(t *testing.T) {
@@ -200,7 +200,7 @@ func TestSubscriptions(t *testing.T) {
 	assertRequest(t, g, "POST", "/api/recurring/subscription/s1")
 	equal(t, "derive flag", g.bodyJSON()["derive_amount_from_line_items"], true)
 
-	mustNoError(t, c.Subscriptions.Delete(ctx(), "s1"))
+	mustNoError(t, errOf(c.Subscriptions.Delete(ctx(), "s1")))
 	assertRequest(t, g, "DELETE", "/api/recurring/subscription/s1")
 
 	_, err = c.Subscriptions.Create(ctx(), nil)
@@ -209,7 +209,7 @@ func TestSubscriptions(t *testing.T) {
 	mustError(t, err, "subscription id is required")
 	_, err = c.Subscriptions.Update(ctx(), "s1", nil)
 	mustError(t, err, "must not be nil")
-	mustError(t, c.Subscriptions.Delete(ctx(), ""), "subscription id is required")
+	mustError(t, errOf(c.Subscriptions.Delete(ctx(), "")), "subscription id is required")
 }
 
 func TestSubscriptions_Lifecycle(t *testing.T) {

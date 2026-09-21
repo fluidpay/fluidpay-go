@@ -70,6 +70,7 @@ type Client struct {
 	httpClient    *http.Client
 	authorization string
 	userAgent     string
+	hooks         []func(*APIResponse)
 
 	// Transactions processes payments: sale, authorize, capture, void,
 	// refund, verification and credit, plus lookup and search.
@@ -176,6 +177,27 @@ func WithBearerToken(token string) Option {
 	}
 }
 
+// WithResponseHook registers fn to be called with every HTTP response the
+// gateway returns, successful or not, before the result is handed back to
+// the caller. Use it to log the correlation ID of every request in one
+// place:
+//
+//	fluidpay.WithResponseHook(func(r *fluidpay.APIResponse) {
+//		log.Printf("fluidpay %s /%s -> %d correlation id %s", r.Method, r.Path, r.StatusCode, r.CorrelationID)
+//	})
+//
+// Hooks run synchronously on the calling goroutine and must not block for
+// long. Several hooks may be registered; they run in order.
+func WithResponseHook(fn func(*APIResponse)) Option {
+	return func(c *Client) error {
+		if fn == nil {
+			return errors.New("fluidpay: response hook must not be nil")
+		}
+		c.hooks = append(c.hooks, fn)
+		return nil
+	}
+}
+
 func defaultUserAgent() string { return "fluidpay-go/" + Version }
 
 // NewClient returns a Client authenticated with a private API key. The key
@@ -268,16 +290,27 @@ func (c *Client) setBaseURL(raw string) error {
 	return nil
 }
 
+// CorrelationIDHeader is the response header carrying FluidPay's
+// correlation ID. Header lookups are case-insensitive.
+const CorrelationIDHeader = "X-Correlation-Id"
+
 // APIResponse describes the HTTP response that produced a value. It is
-// attached to every result through the embedded APIResource so callers can
-// reach the correlation ID and raw headers when they need them.
+// attached to every result through the embedded APIResource, returned
+// directly by methods that have no other result (Void, Delete, ...), carried
+// by *Error, and passed to WithResponseHook, so the correlation ID is always
+// within reach.
 type APIResponse struct {
+	// Method and Path identify the request, for example "POST" and
+	// "transaction/abc/void".
+	Method string
+	Path   string
 	// StatusCode is the HTTP status code.
 	StatusCode int
 	// Header holds the response headers.
 	Header http.Header
-	// CorrelationID is the x-correlation-id header. Quote it in support
-	// requests; FluidPay uses it to find the request in their logs.
+	// CorrelationID is the x-correlation-id header FluidPay attaches to
+	// every response. Quote it in support requests; it is how FluidPay
+	// finds the request in their logs.
 	CorrelationID string
 	// Status is the envelope status, normally "success".
 	Status string
@@ -307,7 +340,26 @@ type APIResource struct {
 	LastResponse *APIResponse `json:"-"`
 }
 
+// CorrelationID returns the x-correlation-id of the response that produced
+// this value, or "" when the value did not come from an API call. It is safe
+// to call on a nil receiver.
+func (r *APIResource) CorrelationID() string {
+	if r == nil || r.LastResponse == nil {
+		return ""
+	}
+	return r.LastResponse.CorrelationID
+}
+
 func (r *APIResource) setLastResponse(resp *APIResponse) { r.LastResponse = resp }
+
+// correlationIDFromHeader reads the correlation ID, accepting the
+// documented x-correlation-id name and the shorter correlation-id alias.
+func correlationIDFromHeader(h http.Header) string {
+	if id := h.Get(CorrelationIDHeader); id != "" {
+		return id
+	}
+	return h.Get("Correlation-Id")
+}
 
 type lastResponseSetter interface{ setLastResponse(*APIResponse) }
 
@@ -353,18 +405,26 @@ func (c *Client) call(ctx context.Context, method, path string, query url.Values
 	}
 
 	apiResp := &APIResponse{
+		Method:        method,
+		Path:          path,
 		StatusCode:    res.StatusCode,
 		Header:        res.Header,
-		CorrelationID: res.Header.Get("X-Correlation-Id"),
+		CorrelationID: correlationIDFromHeader(res.Header),
 		raw:           raw,
 	}
+	// Hooks see the final response metadata whichever way we return.
+	defer func() {
+		for _, hook := range c.hooks {
+			hook(apiResp)
+		}
+	}()
 
 	var env envelope
 	if len(bytes.TrimSpace(raw)) > 0 {
 		// A malformed body on an error status is still an error; on a
 		// success status it is a decoding failure reported below.
 		if jsonErr := json.Unmarshal(raw, &env); jsonErr != nil && res.StatusCode < 400 {
-			return apiResp, fmt.Errorf("fluidpay: %s %s: decoding response: %w", method, path, jsonErr)
+			return apiResp, &decodeError{resp: apiResp, err: jsonErr}
 		}
 	}
 	apiResp.Status = env.Status
@@ -380,6 +440,7 @@ func (c *Client) call(ctx context.Context, method, path string, query url.Values
 			Method:        method,
 			Path:          path,
 			Body:          raw,
+			header:        res.Header,
 		}
 	}
 
@@ -393,7 +454,7 @@ func (c *Client) call(ctx context.Context, method, path string, query url.Values
 		data = raw
 	}
 	if err := decodeData(data, out); err != nil {
-		return apiResp, fmt.Errorf("fluidpay: %s %s: decoding data: %w", method, path, err)
+		return apiResp, &decodeError{resp: apiResp, err: err}
 	}
 	return apiResp, nil
 }
@@ -519,10 +580,14 @@ func doList[T any](ctx context.Context, c *Client, method, path string, query ur
 	return out.items, resp, nil
 }
 
-// doEmpty performs a request whose response carries no data of interest.
-func doEmpty(ctx context.Context, c *Client, method, path string, query url.Values, body any) error {
-	_, err := c.call(ctx, method, path, query, body, nil)
-	return err
+// doEmpty performs a request whose response carries no data of interest and
+// returns the response metadata so the correlation ID stays available.
+func doEmpty(ctx context.Context, c *Client, method, path string, query url.Values, body any) (*APIResponse, error) {
+	resp, err := c.call(ctx, method, path, query, body, nil)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 // joinPath escapes each segment and joins them with "/".

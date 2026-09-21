@@ -13,7 +13,11 @@ import (
 )
 
 func main() {
-	client, err := fluidpay.NewClientFromEnv()
+	// Log the correlation id of every request; FluidPay support uses it to
+	// find the request in their logs.
+	client, err := fluidpay.NewClientFromEnv(fluidpay.WithResponseHook(func(r *fluidpay.APIResponse) {
+		log.Printf("fluidpay %s /%s -> %d (correlation id %s)", r.Method, r.Path, r.StatusCode, r.CorrelationID)
+	}))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -44,17 +48,18 @@ func main() {
 		if apiErr, ok := fluidpay.AsError(err); ok {
 			log.Fatalf("gateway rejected the request: %s (correlation id %s)", apiErr.Msg, apiErr.CorrelationID)
 		}
-		log.Fatal(err)
+		log.Fatalf("%v (correlation id %q)", err, fluidpay.CorrelationID(err))
 	}
 
 	if !tx.Approved() {
 		log.Fatalf("declined: code %d (%s)", tx.ResponseCode, tx.ResponseBody.Card.ProcessorResponseText)
 	}
-	fmt.Printf("approved %s for %d cents, auth code %s, AVS %s\n",
-		tx.ID, tx.AmountAuthorized, tx.ResponseBody.Card.AuthCode, tx.ResponseBody.Card.AVSResponseCode)
+	fmt.Printf("approved %s for %d cents, auth code %s, AVS %s (correlation id %s)\n",
+		tx.ID, tx.AmountAuthorized, tx.ResponseBody.Card.AuthCode, tx.ResponseBody.Card.AVSResponseCode, tx.CorrelationID())
 
-	if err := client.Transactions.Void(ctx, tx.ID); err != nil {
+	resp, err := client.Transactions.Void(ctx, tx.ID)
+	if err != nil {
 		log.Fatalf("void: %v", err)
 	}
-	fmt.Println("voided", tx.ID)
+	fmt.Printf("voided %s (correlation id %s)\n", tx.ID, resp.CorrelationID)
 }

@@ -304,9 +304,9 @@ func (s *AddOnsService) Update(ctx context.Context, addOnID string, req *Adjustm
 }
 
 // Delete removes an add-on.
-func (s *AddOnsService) Delete(ctx context.Context, addOnID string) error {
+func (s *AddOnsService) Delete(ctx context.Context, addOnID string) (*APIResponse, error) {
 	if err := requireID("add-on id", addOnID); err != nil {
-		return err
+		return nil, err
 	}
 	return doEmpty(ctx, s.client, http.MethodDelete, joinPath("recurring", "addon", addOnID), nil, nil)
 }
@@ -350,9 +350,9 @@ func (s *DiscountsService) Update(ctx context.Context, discountID string, req *A
 }
 
 // Delete removes a discount.
-func (s *DiscountsService) Delete(ctx context.Context, discountID string) error {
+func (s *DiscountsService) Delete(ctx context.Context, discountID string) (*APIResponse, error) {
 	if err := requireID("discount id", discountID); err != nil {
-		return err
+		return nil, err
 	}
 	return doEmpty(ctx, s.client, http.MethodDelete, joinPath("recurring", "discount", discountID), nil, nil)
 }
@@ -396,9 +396,9 @@ func (s *PlansService) Update(ctx context.Context, planID string, req *PlanReque
 }
 
 // Delete removes a plan.
-func (s *PlansService) Delete(ctx context.Context, planID string) error {
+func (s *PlansService) Delete(ctx context.Context, planID string) (*APIResponse, error) {
 	if err := requireID("plan id", planID); err != nil {
-		return err
+		return nil, err
 	}
 	return doEmpty(ctx, s.client, http.MethodDelete, joinPath("recurring", "plan", planID), nil, nil)
 }
@@ -445,9 +445,9 @@ func (s *SubscriptionsService) Update(ctx context.Context, subscriptionID string
 }
 
 // Delete removes a subscription.
-func (s *SubscriptionsService) Delete(ctx context.Context, subscriptionID string) error {
+func (s *SubscriptionsService) Delete(ctx context.Context, subscriptionID string) (*APIResponse, error) {
 	if err := requireID("subscription id", subscriptionID); err != nil {
-		return err
+		return nil, err
 	}
 	return doEmpty(ctx, s.client, http.MethodDelete, joinPath("recurring", "subscription", subscriptionID), nil, nil)
 }

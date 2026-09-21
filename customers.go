@@ -370,9 +370,9 @@ func (s *CustomersService) Update(ctx context.Context, customerID string, req *C
 }
 
 // Delete removes a customer and everything stored on it.
-func (s *CustomersService) Delete(ctx context.Context, customerID string) error {
+func (s *CustomersService) Delete(ctx context.Context, customerID string) (*APIResponse, error) {
 	if err := requireID("customer id", customerID); err != nil {
-		return err
+		return nil, err
 	}
 	return doEmpty(ctx, s.client, http.MethodDelete, joinPath("vault", customerID), nil, nil)
 }
@@ -402,9 +402,9 @@ func (s *CustomersService) UpdateAddress(ctx context.Context, customerID, addres
 }
 
 // DeleteAddress removes a stored address.
-func (s *CustomersService) DeleteAddress(ctx context.Context, customerID, addressID string) error {
+func (s *CustomersService) DeleteAddress(ctx context.Context, customerID, addressID string) (*APIResponse, error) {
 	if err := requireIDs("customer id", customerID, "address id", addressID); err != nil {
-		return err
+		return nil, err
 	}
 	return doEmpty(ctx, s.client, http.MethodDelete, joinPath("vault", "customer", customerID, "address", addressID), nil, nil)
 }
@@ -501,17 +501,17 @@ func (s *CustomersService) UpdateToken(ctx context.Context, customerID, paymentM
 }
 
 // DeleteCard removes a stored card.
-func (s *CustomersService) DeleteCard(ctx context.Context, customerID, cardID string) error {
+func (s *CustomersService) DeleteCard(ctx context.Context, customerID, cardID string) (*APIResponse, error) {
 	if err := requireIDs("customer id", customerID, "card id", cardID); err != nil {
-		return err
+		return nil, err
 	}
 	return doEmpty(ctx, s.client, http.MethodDelete, joinPath("vault", "customer", customerID, "card", cardID), nil, nil)
 }
 
 // DeleteACH removes a stored bank account.
-func (s *CustomersService) DeleteACH(ctx context.Context, customerID, achID string) error {
+func (s *CustomersService) DeleteACH(ctx context.Context, customerID, achID string) (*APIResponse, error) {
 	if err := requireIDs("customer id", customerID, "ach id", achID); err != nil {
-		return err
+		return nil, err
 	}
 	return doEmpty(ctx, s.client, http.MethodDelete, joinPath("vault", "customer", customerID, "ach", achID), nil, nil)
 }

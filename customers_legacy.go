@@ -265,12 +265,12 @@ func (s *LegacyCustomersService) Search(ctx context.Context, req *LegacyCustomer
 // Update sets the description and default tokens of a customer.
 //
 // Deprecated: use Client.Customers.Update.
-func (s *LegacyCustomersService) Update(ctx context.Context, customerID string, req *LegacyCustomerUpdateRequest) error {
+func (s *LegacyCustomersService) Update(ctx context.Context, customerID string, req *LegacyCustomerUpdateRequest) (*APIResponse, error) {
 	if err := requireID("customer id", customerID); err != nil {
-		return err
+		return nil, err
 	}
 	if req == nil {
-		return errNilRequest("customer update")
+		return nil, errNilRequest("customer update")
 	}
 	return doEmpty(ctx, s.client, http.MethodPost, joinPath("customer", customerID), nil, req)
 }
@@ -278,9 +278,9 @@ func (s *LegacyCustomersService) Update(ctx context.Context, customerID string, 
 // Delete removes a customer.
 //
 // Deprecated: use Client.Customers.Delete.
-func (s *LegacyCustomersService) Delete(ctx context.Context, customerID string) error {
+func (s *LegacyCustomersService) Delete(ctx context.Context, customerID string) (*APIResponse, error) {
 	if err := requireID("customer id", customerID); err != nil {
-		return err
+		return nil, err
 	}
 	return doEmpty(ctx, s.client, http.MethodDelete, joinPath("customer", customerID), nil, nil)
 }
@@ -338,9 +338,9 @@ func (s *LegacyCustomersService) UpdateAddress(ctx context.Context, customerID, 
 // DeleteAddress removes an address token.
 //
 // Deprecated: use Client.Customers.DeleteAddress.
-func (s *LegacyCustomersService) DeleteAddress(ctx context.Context, customerID, addressID string) error {
+func (s *LegacyCustomersService) DeleteAddress(ctx context.Context, customerID, addressID string) (*APIResponse, error) {
 	if err := requireIDs("customer id", customerID, "address id", addressID); err != nil {
-		return err
+		return nil, err
 	}
 	return doEmpty(ctx, s.client, http.MethodDelete, joinPath("customer", customerID, "address", addressID), nil, nil)
 }
@@ -436,12 +436,12 @@ func (s *LegacyCustomersService) ListACH(ctx context.Context, customerID string)
 // fields nested under "card" and returns no data.
 //
 // Deprecated: use Client.Customers.UpdateCard.
-func (s *LegacyCustomersService) UpdateCard(ctx context.Context, customerID, cardID string, card *LegacyCardInput) error {
+func (s *LegacyCustomersService) UpdateCard(ctx context.Context, customerID, cardID string, card *LegacyCardInput) (*APIResponse, error) {
 	if err := requireIDs("customer id", customerID, "card id", cardID); err != nil {
-		return err
+		return nil, err
 	}
 	if card == nil {
-		return errNilRequest("card")
+		return nil, errNilRequest("card")
 	}
 	body := struct {
 		Card *LegacyCardInput `json:"card"`
@@ -452,12 +452,12 @@ func (s *LegacyCustomersService) UpdateCard(ctx context.Context, customerID, car
 // UpdateACH replaces a stored bank account token.
 //
 // Deprecated: use Client.Customers.UpdateACH.
-func (s *LegacyCustomersService) UpdateACH(ctx context.Context, customerID, achID string, ach *LegacyACHInput) error {
+func (s *LegacyCustomersService) UpdateACH(ctx context.Context, customerID, achID string, ach *LegacyACHInput) (*APIResponse, error) {
 	if err := requireIDs("customer id", customerID, "ach id", achID); err != nil {
-		return err
+		return nil, err
 	}
 	if ach == nil {
-		return errNilRequest("ach")
+		return nil, errNilRequest("ach")
 	}
 	body := struct {
 		ACH *LegacyACHInput `json:"ach"`
@@ -468,9 +468,9 @@ func (s *LegacyCustomersService) UpdateACH(ctx context.Context, customerID, achI
 // DeleteCard removes a stored card token.
 //
 // Deprecated: use Client.Customers.DeleteCard.
-func (s *LegacyCustomersService) DeleteCard(ctx context.Context, customerID, cardID string) error {
+func (s *LegacyCustomersService) DeleteCard(ctx context.Context, customerID, cardID string) (*APIResponse, error) {
 	if err := requireIDs("customer id", customerID, "card id", cardID); err != nil {
-		return err
+		return nil, err
 	}
 	return doEmpty(ctx, s.client, http.MethodDelete, joinPath("customer", customerID, "paymentmethod", "card", cardID), nil, nil)
 }
@@ -478,9 +478,9 @@ func (s *LegacyCustomersService) DeleteCard(ctx context.Context, customerID, car
 // DeleteACH removes a stored bank account token.
 //
 // Deprecated: use Client.Customers.DeleteACH.
-func (s *LegacyCustomersService) DeleteACH(ctx context.Context, customerID, achID string) error {
+func (s *LegacyCustomersService) DeleteACH(ctx context.Context, customerID, achID string) (*APIResponse, error) {
 	if err := requireIDs("customer id", customerID, "ach id", achID); err != nil {
-		return err
+		return nil, err
 	}
 	return doEmpty(ctx, s.client, http.MethodDelete, joinPath("customer", customerID, "paymentmethod", "ach", achID), nil, nil)
 }

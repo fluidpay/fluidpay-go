@@ -76,7 +76,7 @@ func TestIntegration_SaleVoid(t *testing.T) {
 		t.Fatalf("Get returned %s, want %s", got.ID, tx.ID)
 	}
 
-	if err := client.Transactions.Void(ctx, tx.ID); err != nil {
+	if _, err := client.Transactions.Void(ctx, tx.ID); err != nil {
 		t.Fatalf("Void: %v", err)
 	}
 
@@ -113,7 +113,7 @@ func TestIntegration_VaultLifecycle(t *testing.T) {
 		t.Fatalf("Customers.Create: %v", err)
 	}
 	defer func() {
-		if err := client.Customers.Delete(context.Background(), customer.ID); err != nil {
+		if _, err := client.Customers.Delete(context.Background(), customer.ID); err != nil {
 			t.Errorf("Customers.Delete: %v", err)
 		}
 	}()
@@ -140,7 +140,7 @@ func TestIntegration_VaultLifecycle(t *testing.T) {
 	if !tx.Approved() {
 		t.Fatalf("vault sale not approved: %d %s", tx.ResponseCode, tx.Response)
 	}
-	_ = client.Transactions.Void(ctx, tx.ID)
+	_, _ = client.Transactions.Void(ctx, tx.ID)
 }
 
 func TestIntegration_Terminals(t *testing.T) {

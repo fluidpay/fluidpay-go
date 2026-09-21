@@ -22,9 +22,9 @@ func TestTerminals(t *testing.T) {
 	equal(t, "AutoSettle", term.AutoSettle, true)
 	equal(t, "zero updated_at", term.UpdatedAt.IsZero(), true)
 
-	mustNoError(t, c.Terminals.Settle(ctx(), "term1"))
+	mustNoError(t, errOf(c.Terminals.Settle(ctx(), "term1")))
 	assertRequest(t, g, "POST", "/api/terminal/term1/settle")
-	mustError(t, c.Terminals.Settle(ctx(), ""), "terminal id is required")
+	mustError(t, errOf(c.Terminals.Settle(ctx(), "")), "terminal id is required")
 }
 
 func TestSettlements_SearchBatches(t *testing.T) {
@@ -116,10 +116,10 @@ func TestUsers(t *testing.T) {
 	assertRequest(t, g, "POST", "/api/user/u1")
 	equal(t, "update body", string(g.last().Body), `{"status":"disabled"}`)
 
-	mustNoError(t, c.Users.Delete(ctx(), "u1"))
+	mustNoError(t, errOf(c.Users.Delete(ctx(), "u1")))
 	assertRequest(t, g, "DELETE", "/api/user/u1")
 
-	mustNoError(t, c.Users.ChangePassword(ctx(), &ChangePasswordRequest{Username: "will_test", CurrentPassword: "a", NewPassword: "b"}))
+	mustNoError(t, errOf(c.Users.ChangePassword(ctx(), &ChangePasswordRequest{Username: "will_test", CurrentPassword: "a", NewPassword: "b"})))
 	assertRequest(t, g, "POST", "/api/user/change-password")
 
 	_, err = c.Users.Get(ctx(), "")
@@ -130,8 +130,8 @@ func TestUsers(t *testing.T) {
 	mustError(t, err, "must not be nil")
 	_, err = c.Users.Update(ctx(), "", &UserUpdateRequest{})
 	mustError(t, err, "user id is required")
-	mustError(t, c.Users.Delete(ctx(), ""), "user id is required")
-	mustError(t, c.Users.ChangePassword(ctx(), nil), "must not be nil")
+	mustError(t, errOf(c.Users.Delete(ctx(), "")), "user id is required")
+	mustError(t, errOf(c.Users.ChangePassword(ctx(), nil)), "must not be nil")
 }
 
 func TestAPIKeys(t *testing.T) {
@@ -154,12 +154,12 @@ func TestAPIKeys(t *testing.T) {
 	equal(t, "public key type", list.Data[1].Type, APIKeyTypePublic)
 	equal(t, "secret not listed", list.Data[0].Key, "")
 
-	mustNoError(t, c.APIKeys.Delete(ctx(), "key1"))
+	mustNoError(t, errOf(c.APIKeys.Delete(ctx(), "key1")))
 	assertRequest(t, g, "DELETE", "/api/user/apikey/key1")
 
 	_, err = c.APIKeys.Create(ctx(), nil)
 	mustError(t, err, "must not be nil")
-	mustError(t, c.APIKeys.Delete(ctx(), ""), "api key id is required")
+	mustError(t, errOf(c.APIKeys.Delete(ctx(), "")), "api key id is required")
 }
 
 func TestAuth(t *testing.T) {
@@ -181,15 +181,15 @@ func TestAuth(t *testing.T) {
 	// The token can be used to build a second client.
 	c2, err := NewClient("", WithBaseURL(c.BaseURL()), WithBearerToken(jwt.Token))
 	mustNoError(t, err)
-	mustNoError(t, c2.Auth.Logout(ctx()))
+	mustNoError(t, errOf(c2.Auth.Logout(ctx())))
 	r := assertRequestWithAuth(t, g, "GET", "/api/logout", "Bearer eyJhbGciOi...")
 	equal(t, "no body", len(r.Body), 0)
 
-	mustNoError(t, c.Auth.ForgotUsername(ctx(), &ForgotUsernameRequest{Email: "e@x.com"}))
+	mustNoError(t, errOf(c.Auth.ForgotUsername(ctx(), &ForgotUsernameRequest{Email: "e@x.com"})))
 	assertRequest(t, g, "POST", "/api/user/forgot-username")
-	mustNoError(t, c.Auth.ForgotPassword(ctx(), &ForgotPasswordRequest{Username: "u"}))
+	mustNoError(t, errOf(c.Auth.ForgotPassword(ctx(), &ForgotPasswordRequest{Username: "u"})))
 	assertRequest(t, g, "POST", "/api/user/forgot-password")
-	mustNoError(t, c.Auth.ResetPassword(ctx(), &PasswordResetRequest{Username: "u", ResetCode: "123", Password: "new"}))
+	mustNoError(t, errOf(c.Auth.ResetPassword(ctx(), &PasswordResetRequest{Username: "u", ResetCode: "123", Password: "new"})))
 	assertRequest(t, g, "POST", "/api/user/forgot-password/reset")
 	equal(t, "reset body", string(g.last().Body), `{"username":"u","reset_code":"123","password":"new"}`)
 
@@ -206,9 +206,9 @@ func TestAuth(t *testing.T) {
 
 	_, err = c.Auth.ObtainJWT(ctx(), nil)
 	mustError(t, err, "must not be nil")
-	mustError(t, c.Auth.ForgotUsername(ctx(), nil), "must not be nil")
-	mustError(t, c.Auth.ForgotPassword(ctx(), nil), "must not be nil")
-	mustError(t, c.Auth.ResetPassword(ctx(), nil), "must not be nil")
+	mustError(t, errOf(c.Auth.ForgotUsername(ctx(), nil)), "must not be nil")
+	mustError(t, errOf(c.Auth.ForgotPassword(ctx(), nil)), "must not be nil")
+	mustError(t, errOf(c.Auth.ResetPassword(ctx(), nil)), "must not be nil")
 }
 
 func assertRequestWithAuth(t *testing.T, g *gateway, method, path, auth string) recorded {

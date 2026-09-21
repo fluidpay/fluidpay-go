@@ -89,5 +89,5 @@ func main() {
 			fmt.Printf("subscription %s needs attention: %s\n", s.ID, s.Status)
 		}
 	}
-	_ = client.Subscriptions.Delete(ctx, sub.ID)
+	_, _ = client.Subscriptions.Delete(ctx, sub.ID)
 }

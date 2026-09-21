@@ -59,6 +59,14 @@
 // return a *Error carrying the HTTP status, the gateway message and the
 // x-correlation-id you should quote when contacting FluidPay support.
 //
+// # Correlation IDs
+//
+// Every gateway response carries an x-correlation-id header. Results expose
+// it through the embedded APIResource (tx.CorrelationID()), methods with no
+// other result (Void, Delete, ...) return the *APIResponse directly, errors
+// expose it through CorrelationID(err), and WithResponseHook lets you log it
+// for every request.
+//
 // # Webhooks
 //
 // VerifyWebhookSignature and ParseWebhook help you authenticate and decode

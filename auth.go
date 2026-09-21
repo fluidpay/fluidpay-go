@@ -67,30 +67,30 @@ func (s *AuthService) ObtainJWT(ctx context.Context, req *JWTRequest) (*JWT, err
 }
 
 // Logout invalidates the JWT the client is currently using.
-func (s *AuthService) Logout(ctx context.Context) error {
+func (s *AuthService) Logout(ctx context.Context) (*APIResponse, error) {
 	return doEmpty(ctx, s.client, http.MethodGet, "logout", nil, nil)
 }
 
 // ForgotUsername emails a username reminder.
-func (s *AuthService) ForgotUsername(ctx context.Context, req *ForgotUsernameRequest) error {
+func (s *AuthService) ForgotUsername(ctx context.Context, req *ForgotUsernameRequest) (*APIResponse, error) {
 	if req == nil {
-		return errNilRequest("forgot username")
+		return nil, errNilRequest("forgot username")
 	}
 	return doEmpty(ctx, s.client, http.MethodPost, "user/forgot-username", nil, req)
 }
 
 // ForgotPassword emails a password reset code.
-func (s *AuthService) ForgotPassword(ctx context.Context, req *ForgotPasswordRequest) error {
+func (s *AuthService) ForgotPassword(ctx context.Context, req *ForgotPasswordRequest) (*APIResponse, error) {
 	if req == nil {
-		return errNilRequest("forgot password")
+		return nil, errNilRequest("forgot password")
 	}
 	return doEmpty(ctx, s.client, http.MethodPost, "user/forgot-password", nil, req)
 }
 
 // ResetPassword sets a new password using the emailed reset code.
-func (s *AuthService) ResetPassword(ctx context.Context, req *PasswordResetRequest) error {
+func (s *AuthService) ResetPassword(ctx context.Context, req *PasswordResetRequest) (*APIResponse, error) {
 	if req == nil {
-		return errNilRequest("password reset")
+		return nil, errNilRequest("password reset")
 	}
 	return doEmpty(ctx, s.client, http.MethodPost, "user/forgot-password/reset", nil, req)
 }

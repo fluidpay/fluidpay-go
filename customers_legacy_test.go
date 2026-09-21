@@ -42,19 +42,19 @@ func TestLegacyCustomers_CRUD(t *testing.T) {
 	equal(t, "count fallback", list.TotalCount, 1)
 	equal(t, "len", len(list.Data), 1)
 
-	mustNoError(t, c.LegacyCustomers.Update(ctx(), "cust1", &LegacyCustomerUpdateRequest{PaymentMethod: PaymentMethodTypeCard, PaymentMethodID: "pm"}))
+	mustNoError(t, errOf(c.LegacyCustomers.Update(ctx(), "cust1", &LegacyCustomerUpdateRequest{PaymentMethod: PaymentMethodTypeCard, PaymentMethodID: "pm"})))
 	assertRequest(t, g, "POST", "/api/customer/cust1")
 	equal(t, "update body", string(g.last().Body), `{"payment_method":"card","payment_method_id":"pm"}`)
 
-	mustNoError(t, c.LegacyCustomers.Delete(ctx(), "cust1"))
+	mustNoError(t, errOf(c.LegacyCustomers.Delete(ctx(), "cust1")))
 	assertRequest(t, g, "DELETE", "/api/customer/cust1")
 
 	_, err = c.LegacyCustomers.Create(ctx(), nil)
 	mustError(t, err, "must not be nil")
 	_, err = c.LegacyCustomers.Get(ctx(), "")
 	mustError(t, err, "customer id is required")
-	mustError(t, c.LegacyCustomers.Update(ctx(), "cust1", nil), "must not be nil")
-	mustError(t, c.LegacyCustomers.Delete(ctx(), ""), "customer id is required")
+	mustError(t, errOf(c.LegacyCustomers.Update(ctx(), "cust1", nil)), "must not be nil")
+	mustError(t, errOf(c.LegacyCustomers.Delete(ctx(), "")), "customer id is required")
 	_, err = c.LegacyCustomers.Search(ctx(), nil)
 	mustNoError(t, err)
 }
@@ -93,7 +93,7 @@ func TestLegacyCustomers_Addresses(t *testing.T) {
 	mustNoError(t, err)
 	assertRequest(t, g, "POST", "/api/customer/cust1/address/addr1")
 
-	mustNoError(t, c.LegacyCustomers.DeleteAddress(ctx(), "cust1", "addr1"))
+	mustNoError(t, errOf(c.LegacyCustomers.DeleteAddress(ctx(), "cust1", "addr1")))
 	assertRequest(t, g, "DELETE", "/api/customer/cust1/address/addr1")
 
 	_, err = c.LegacyCustomers.CreateAddress(ctx(), "cust1", nil)
@@ -104,7 +104,7 @@ func TestLegacyCustomers_Addresses(t *testing.T) {
 	mustError(t, err, "customer id is required")
 	_, err = c.LegacyCustomers.UpdateAddress(ctx(), "cust1", "addr1", nil)
 	mustError(t, err, "must not be nil")
-	mustError(t, c.LegacyCustomers.DeleteAddress(ctx(), "cust1", ""), "address id is required")
+	mustError(t, errOf(c.LegacyCustomers.DeleteAddress(ctx(), "cust1", "")), "address id is required")
 }
 
 func TestLegacyCustomers_PaymentMethods(t *testing.T) {
@@ -159,17 +159,17 @@ func TestLegacyCustomers_PaymentMethods(t *testing.T) {
 	mustNoError(t, err)
 	equal(t, "ach len", len(achs.Data), 1)
 
-	mustNoError(t, c.LegacyCustomers.UpdateCard(ctx(), "cust1", "card1", &LegacyCardInput{CardNumber: "4", ExpirationDate: "1/1"}))
+	mustNoError(t, errOf(c.LegacyCustomers.UpdateCard(ctx(), "cust1", "card1", &LegacyCardInput{CardNumber: "4", ExpirationDate: "1/1"})))
 	r = assertRequest(t, g, "POST", "/api/customer/cust1/paymentmethod/card/card1")
 	equal(t, "nested card", string(r.Body), `{"card":{"card_number":"4","expiration_date":"1/1"}}`)
 
-	mustNoError(t, c.LegacyCustomers.UpdateACH(ctx(), "cust1", "ach1", &LegacyACHInput{AccountNumber: "1", RoutingNumber: "2", AccountType: "checking", SecCode: "web"}))
+	mustNoError(t, errOf(c.LegacyCustomers.UpdateACH(ctx(), "cust1", "ach1", &LegacyACHInput{AccountNumber: "1", RoutingNumber: "2", AccountType: "checking", SecCode: "web"})))
 	r = assertRequest(t, g, "POST", "/api/customer/cust1/paymentmethod/ach/ach1")
 	equal(t, "nested ach", string(r.Body), `{"ach":{"account_number":"1","routing_number":"2","account_type":"checking","sec_code":"web"}}`)
 
-	mustNoError(t, c.LegacyCustomers.DeleteCard(ctx(), "cust1", "card1"))
+	mustNoError(t, errOf(c.LegacyCustomers.DeleteCard(ctx(), "cust1", "card1")))
 	assertRequest(t, g, "DELETE", "/api/customer/cust1/paymentmethod/card/card1")
-	mustNoError(t, c.LegacyCustomers.DeleteACH(ctx(), "cust1", "ach1"))
+	mustNoError(t, errOf(c.LegacyCustomers.DeleteACH(ctx(), "cust1", "ach1")))
 	assertRequest(t, g, "DELETE", "/api/customer/cust1/paymentmethod/ach/ach1")
 
 	// Validation.
@@ -187,8 +187,8 @@ func TestLegacyCustomers_PaymentMethods(t *testing.T) {
 	mustError(t, err, "customer id is required")
 	_, err = c.LegacyCustomers.ListACH(ctx(), "")
 	mustError(t, err, "customer id is required")
-	mustError(t, c.LegacyCustomers.UpdateCard(ctx(), "cust1", "card1", nil), "must not be nil")
-	mustError(t, c.LegacyCustomers.UpdateACH(ctx(), "cust1", "", &LegacyACHInput{}), "ach id is required")
-	mustError(t, c.LegacyCustomers.DeleteCard(ctx(), "", "card1"), "customer id is required")
-	mustError(t, c.LegacyCustomers.DeleteACH(ctx(), "cust1", ""), "ach id is required")
+	mustError(t, errOf(c.LegacyCustomers.UpdateCard(ctx(), "cust1", "card1", nil)), "must not be nil")
+	mustError(t, errOf(c.LegacyCustomers.UpdateACH(ctx(), "cust1", "", &LegacyACHInput{})), "ach id is required")
+	mustError(t, errOf(c.LegacyCustomers.DeleteCard(ctx(), "", "card1")), "customer id is required")
+	mustError(t, errOf(c.LegacyCustomers.DeleteACH(ctx(), "cust1", "")), "ach id is required")
 }

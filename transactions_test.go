@@ -330,13 +330,13 @@ func TestTransactions_Capture(t *testing.T) {
 func TestTransactions_Void(t *testing.T) {
 	g, c := newGateway(t)
 	g.respond("POST", "/api/transaction/tx1/void", 200, `{"status":"success","msg":"success","data":null}`)
-	mustNoError(t, c.Transactions.Void(ctx(), "tx1"))
+	mustNoError(t, errOf(c.Transactions.Void(ctx(), "tx1")))
 	r := assertRequest(t, g, "POST", "/api/transaction/tx1/void")
 	equal(t, "no body", len(r.Body), 0)
 
 	g.respond("POST", "/api/transaction/tx2/void", 200, `{"status":"failed","msg":"transaction already settled"}`)
-	mustError(t, c.Transactions.Void(ctx(), "tx2"), "already settled")
-	mustError(t, c.Transactions.Void(ctx(), ""), "transaction id is required")
+	mustError(t, errOf(c.Transactions.Void(ctx(), "tx2")), "already settled")
+	mustError(t, errOf(c.Transactions.Void(ctx(), "")), "transaction id is required")
 }
 
 func TestTransactions_Refund(t *testing.T) {

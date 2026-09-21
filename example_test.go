@@ -199,3 +199,37 @@ func ExampleError() {
 		fmt.Println("check the key, its environment and any IP restrictions")
 	}
 }
+
+func ExampleWithResponseHook() {
+	// Record the correlation id of every gateway response in your logs so
+	// support requests can reference it.
+	client, err := fluidpay.NewClientFromEnv(fluidpay.WithResponseHook(func(r *fluidpay.APIResponse) {
+		log.Printf("fluidpay %s /%s -> %d correlation id %s", r.Method, r.Path, r.StatusCode, r.CorrelationID)
+	}))
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, _ = client.Terminals.List(context.Background())
+}
+
+func ExampleCorrelationID() {
+	client, _ := fluidpay.NewClientFromEnv()
+	ctx := context.Background()
+
+	tx, err := client.Transactions.Sale(ctx, &fluidpay.TransactionRequest{
+		Amount:        1000,
+		PaymentMethod: fluidpay.PaymentMethod{Token: "temporary-token"},
+	})
+	if err != nil {
+		// Works for gateway rejections and decoding failures, wrapped or not.
+		log.Fatalf("sale failed: %v (correlation id %q)", err, fluidpay.CorrelationID(err))
+	}
+	fmt.Println(tx.ID, tx.CorrelationID())
+
+	// Calls with no other result return the response metadata directly.
+	resp, err := client.Transactions.Void(ctx, tx.ID)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(resp.CorrelationID)
+}

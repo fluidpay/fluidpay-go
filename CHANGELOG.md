@@ -36,7 +36,17 @@ All notable changes to this project are documented here. The format follows
 - Typed `*Error` carrying the HTTP status, gateway message and
   `x-correlation-id`, with `IsUnauthorized` / `IsNotFound` helpers.
 - `APIResource.LastResponse` on every result with the correlation id,
-  status code and headers.
+  status code and headers, plus the `CorrelationID()` convenience method.
+- Methods with no other result (`Void`, `Delete`, `Settle`, `Logout`, ...)
+  return `(*APIResponse, error)` so the correlation id of those calls is
+  available too.
+- `fluidpay.CorrelationID(err)` and `Error.Response()` recover the
+  correlation id from any error that came from a gateway response,
+  including decoding failures and wrapped errors.
+- `WithResponseHook` to observe every response (method, path, status,
+  correlation id) in one place, for logging and tracing.
+- The `Correlation-Id` header name is accepted as a fallback to the
+  documented `x-correlation-id`.
 - Unit tests for every endpoint against an in-process gateway, runnable
   examples, an opt-in sandbox integration suite and a CI workflow.
 

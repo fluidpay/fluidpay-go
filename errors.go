@@ -31,6 +31,8 @@ type Error struct {
 	Path   string
 	// Body is the raw response body, useful when Msg is empty.
 	Body []byte
+
+	header http.Header
 }
 
 // Error implements the error interface.
@@ -61,6 +63,57 @@ func (e *Error) IsNotFound() bool { return e.StatusCode == http.StatusNotFound }
 
 // IsBadRequest reports whether the gateway rejected the request payload.
 func (e *Error) IsBadRequest() bool { return e.StatusCode == http.StatusBadRequest }
+
+// Response returns the metadata of the HTTP response that produced the
+// error, including the correlation ID, status code and headers.
+func (e *Error) Response() *APIResponse {
+	return &APIResponse{
+		Method:        e.Method,
+		Path:          e.Path,
+		StatusCode:    e.StatusCode,
+		CorrelationID: e.CorrelationID,
+		Status:        e.Status,
+		Msg:           e.Msg,
+		Header:        e.header,
+		raw:           e.Body,
+	}
+}
+
+func (e *Error) correlationID() string { return e.CorrelationID }
+
+// decodeError is returned when the gateway answered but the SDK could not
+// decode the body. It keeps the response so the correlation ID survives.
+type decodeError struct {
+	resp *APIResponse
+	err  error
+}
+
+func (e *decodeError) Error() string {
+	msg := fmt.Sprintf("fluidpay: %s /%s: decoding response: %v", e.resp.Method, strings.TrimLeft(e.resp.Path, "/"), e.err)
+	if e.resp.CorrelationID != "" {
+		msg += " (correlation id " + e.resp.CorrelationID + ")"
+	}
+	return msg
+}
+
+func (e *decodeError) Unwrap() error { return e.err }
+
+func (e *decodeError) correlationID() string { return e.resp.CorrelationID }
+
+// correlated is implemented by errors that carry a correlation ID.
+type correlated interface{ correlationID() string }
+
+// CorrelationID returns the x-correlation-id associated with err, or "" when
+// err did not come from a gateway response (for example a network failure
+// or a validation error raised before any request was sent). It works on
+// *Error and on decoding errors, including when they are wrapped.
+func CorrelationID(err error) string {
+	var c correlated
+	if errors.As(err, &c) {
+		return c.correlationID()
+	}
+	return ""
+}
 
 // AsError extracts a *Error from err, if there is one.
 func AsError(err error) (*Error, bool) {

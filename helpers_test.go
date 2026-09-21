@@ -157,6 +157,10 @@ func assertRequest(t *testing.T, g *gateway, method, path string) recorded {
 	return r
 }
 
+// errOf discards the response of a (*APIResponse, error) call so it can be
+// passed straight to mustError / mustNoError.
+func errOf(_ *APIResponse, err error) error { return err }
+
 func mustNoError(t *testing.T, err error) {
 	t.Helper()
 	if err != nil {
