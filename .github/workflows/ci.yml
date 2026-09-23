@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Go ${{ matrix.go }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go: ["1.21", "1.22", "1.23", "1.24"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+      - name: gofmt
+        run: |
+          out=$(gofmt -l .)
+          if [ -n "$out" ]; then echo "unformatted files:"; echo "$out"; exit 1; fi
+      - name: go vet
+        run: go vet ./...
+      - name: go vet (integration tag)
+        run: go vet -tags integration ./...
+      - name: go test
+        run: go test -race -count=1 -coverprofile=coverage.out ./...
+      - name: coverage summary
+        run: go tool cover -func=coverage.out | tail -1
+
+  # Runs against the FluidPay sandbox when a key is configured as a secret.
+  sandbox:
+    name: Sandbox integration
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+      - name: go test -tags integration
+        env:
+          FLUIDPAY_API_KEY: ${{ secrets.FLUIDPAY_SANDBOX_API_KEY }}
+          FLUIDPAY_ENVIRONMENT: sandbox
+        run: |
+          if [ -z "$FLUIDPAY_API_KEY" ]; then
+            echo "FLUIDPAY_SANDBOX_API_KEY secret not set; skipping"
+            exit 0
+          fi
+          go test -race -count=1 -tags integration -run TestIntegration ./...
